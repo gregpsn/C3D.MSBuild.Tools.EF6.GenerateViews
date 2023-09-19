@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net48</TargetFramework>
     <IsPackable>false</IsPackable>
+    <AssemblyVersion>1.0.1.8662</AssemblyVersion>
+    <FileVersion>1.0.1.8662</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

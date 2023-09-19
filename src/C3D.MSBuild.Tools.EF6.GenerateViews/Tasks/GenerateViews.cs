@@ -105,45 +105,52 @@ namespace C3D.MSBuild.Tools.EF6.Tasks
         {
             if (Debug) System.Diagnostics.Debugger.Launch();
 
-            SourceFile = SourceFiles.OrderByDescending(s => s.ItemSpec).FirstOrDefault(s => System.IO.Path.GetExtension(s.ItemSpec).ToLowerInvariant() == ".edmx");
-            if (SourceFile == null)
-            {
-                Log.LogWarning("No edmx file specified");
-                return true;
-            }
+            var edmxSourceFiles = SourceFiles.Where(s => Path.GetExtension(s.ItemSpec).ToLowerInvariant() == ".edmx");
 
-            OutputFile = new TaskItem(Path.Combine(OutputDirectory, AssemblyName + ".Views." + OutputExtension));
-
-            String viewsOut = String.Empty;
-            string containerName = AssemblyName;
-            IList<System.Data.Entity.Core.Metadata.Edm.EdmSchemaError> errors = null;
-            if (EdmGen2Library.EdmGen2Library.ValidateAndGenerateViewsEF6(SourceFile.ItemSpec,
-                LanguageOption,
-                SourceFile.GetMetadata("CustomToolNamespace") ?? DefaultNamespace,
-                true,
-                out viewsOut,
-                out containerName,
-                out errors))
+            foreach (var sourceFile in edmxSourceFiles)
             {
-                //If errors, will return true
+                SourceFile = sourceFile;
+
+
+                //SourceFile = SourceFiles.OrderByDescending(s => s.ItemSpec).FirstOrDefault(s => System.IO.Path.GetExtension(s.ItemSpec).ToLowerInvariant() == ".edmx");
+                if (SourceFile == null)
+                {
+                    Log.LogWarning("No edmx file specified");
+                    return true;
+                }
+
+                OutputFile = new TaskItem(Path.Combine(OutputDirectory, AssemblyName + ".Views." + OutputExtension));
+
+                String viewsOut = String.Empty;
+                string containerName = AssemblyName;
+                IList<System.Data.Entity.Core.Metadata.Edm.EdmSchemaError> errors = null;
+                if (EdmGen2Library.EdmGen2Library.ValidateAndGenerateViewsEF6(SourceFile.ItemSpec,
+                    LanguageOption,
+                    SourceFile.GetMetadata("CustomToolNamespace") ?? DefaultNamespace,
+                    true,
+                    out viewsOut,
+                    out containerName,
+                    out errors))
+                {
+                    //If errors, will return true
+                    if (errors.Count != 0)
+                    {
+                        DisplayErrors(errors);
+                        return false;
+                    }
+                }
+
+                OutputFile = new TaskItem(Path.Combine(OutputDirectory, containerName + ".Views." + OutputExtension));
+
+                // write out to a file if no errors
+                File.WriteAllText(OutputFile.ItemSpec, viewsOut);
+
                 if (errors.Count != 0)
                 {
                     DisplayErrors(errors);
                     return false;
                 }
             }
-
-            OutputFile = new TaskItem(Path.Combine(OutputDirectory, containerName + ".Views." + OutputExtension));
-
-            // write out to a file if no errors
-            File.WriteAllText(OutputFile.ItemSpec, viewsOut);
-
-            if (errors.Count != 0)
-            {
-                DisplayErrors(errors);
-                return false;
-            }
-
             return true;
         }
 
